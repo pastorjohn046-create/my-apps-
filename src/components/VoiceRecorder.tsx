@@ -11,6 +11,7 @@ export default function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) 
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -38,9 +39,14 @@ export default function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) 
       timerRef.current = setInterval(() => {
         setDuration(prev => prev + 1);
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error accessing microphone:", err);
-      onCancel();
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError("Microphone access denied.");
+      } else {
+        setError("Microphone error.");
+      }
+      setTimeout(() => onCancel(), 2000);
     }
   };
 
@@ -70,26 +76,35 @@ export default function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) 
 
   return (
     <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-2xl w-full">
-      <div className="flex items-center gap-2 flex-1">
-        <motion.div 
-          animate={{ scale: [1, 1.2, 1] }} 
-          transition={{ repeat: Infinity, duration: 1 }}
-          className="w-3 h-3 bg-red-500 rounded-full" 
-        />
-        <span className="text-sm font-mono text-gray-700">{formatDuration(duration)}</span>
-        
-        {/* Waveform placeholder */}
-        <div className="flex-1 flex items-center gap-0.5 h-6 px-2">
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={i}
-              animate={{ height: isRecording ? [4, Math.random() * 20 + 4, 4] : 4 }}
-              transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.05 }}
-              className="w-1 bg-blue-400 rounded-full"
-            />
-          ))}
+      {error ? (
+        <div className="flex-1 flex items-center justify-center p-2 text-red-500 font-bold text-xs uppercase tracking-widest gap-2">
+          <motion.div animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 1 }}>
+            <Mic className="w-4 h-4" />
+          </motion.div>
+          {error}
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center gap-2 flex-1">
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1] }} 
+            transition={{ repeat: Infinity, duration: 1 }}
+            className="w-3 h-3 bg-red-500 rounded-full" 
+          />
+          <span className="text-sm font-mono text-gray-700">{formatDuration(duration)}</span>
+          
+          {/* Waveform placeholder */}
+          <div className="flex-1 flex items-center gap-0.5 h-6 px-2">
+            {[...Array(20)].map((_, i) => (
+              <motion.div
+                key={i}
+                animate={{ height: isRecording ? [4, Math.random() * 20 + 4, 4] : 4 }}
+                transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.05 }}
+                className="w-1 bg-blue-400 rounded-full"
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <button 

@@ -31,9 +31,20 @@ export default function VideoCall({ chatName, onEnd, socket, chatId, isIncoming,
   const [isMicOn, setIsMicOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isDeepFakeMode, setIsDeepFakeMode] = useState(false);
+  const [isVoiceSync, setIsVoiceSync] = useState(true);
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState<Persona>(DEFAULT_PERSONAS[0]);
   const [customPersonas, setCustomPersonas] = useState<Persona[]>([]);
+  const [bitrate, setBitrate] = useState(4520);
+  
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBitrate(prev => prev + Math.floor(Math.random() * 100 - 50));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -75,9 +86,13 @@ export default function VideoCall({ chatName, onEnd, socket, chatId, isIncoming,
         socket.on('call:answer', ({ signal }: any) => {
           peer.signal(signal);
         });
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to get media", err);
-        onEnd();
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          setPermissionError("Camera or Microphone permission was denied. Please allow access in your browser settings and refresh.");
+        } else {
+          setPermissionError("Could not access camera or microphone. Please ensure they are not being used by another application.");
+        }
       }
     };
 
@@ -130,7 +145,21 @@ export default function VideoCall({ chatName, onEnd, socket, chatId, isIncoming,
     >
       {/* Remote Video (Main) */}
       <div className="relative w-full h-full">
-        {remoteStream ? (
+        {permissionError ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 p-8 text-center">
+            <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border-2 border-red-500/50">
+              <ShieldAlert className="w-10 h-10 text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Access Denied</h3>
+            <p className="text-slate-400 max-w-sm mb-8">{permissionError}</p>
+            <button 
+              onClick={onEnd}
+              className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-bold transition-all"
+            >
+              Go Back
+            </button>
+          </div>
+        ) : remoteStream ? (
           <video 
             ref={remoteVideoRef} 
             autoPlay 
@@ -181,16 +210,47 @@ export default function VideoCall({ chatName, onEnd, socket, chatId, isIncoming,
                 )}
                 
                 {/* AI HUD Overlay */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                    <span className="text-[8px] font-black uppercase tracking-tighter text-white shadow-sm">AI GEN-3</span>
+                <div className="absolute inset-0 pointer-events-none select-none">
+                  {/* Facial Tracking Points Simulation */}
+                  <div className="absolute inset-0 grid grid-cols-6 grid-rows-8 gap-0 opacity-40">
+                    {[...Array(48)].map((_, i) => (
+                      <motion.div 
+                        key={i}
+                        animate={{ 
+                          scale: [1, 1.5, 1],
+                          opacity: [0.2, 0.5, 0.2]
+                        }}
+                        transition={{ 
+                          repeat: Infinity, 
+                          duration: Math.random() * 2 + 1,
+                          delay: Math.random() * 2
+                        }}
+                        className="flex items-center justify-center"
+                      >
+                        <div className="w-[1px] h-[1px] bg-blue-400 rounded-full" />
+                      </motion.div>
+                    ))}
                   </div>
-                  <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-blue-500/20 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent flex flex-col items-center justify-end pb-3">
-                    <div className="bg-blue-500/80 backdrop-blur-md px-2 py-0.5 rounded-full border border-blue-400/50">
-                      <p className="text-[8px] font-bold text-white uppercase tracking-widest leading-none">Persona Active</p>
-                    </div>
+
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-md border border-white/5">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-[7px] font-black uppercase tracking-tighter text-white">DEEP_SYNC_v3.2</span>
+                  </div>
+
+                  <div className="absolute top-3 right-3 text-[7px] font-mono text-blue-400/80 text-right">
+                    LATENCY: 12ms<br />
+                    FPS: 60.0
+                  </div>
+
+                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent flex flex-col items-center justify-end pb-4">
+                    <motion.div 
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="bg-blue-600/60 backdrop-blur-md px-3 py-1 rounded-sm border border-blue-400/50 flex items-center gap-2"
+                    >
+                      <Sparkles className="w-2 h-2 text-white" />
+                      <p className="text-[7px] font-black text-white uppercase tracking-[0.2em] leading-none">Synthesis Active</p>
+                    </motion.div>
                   </div>
                 </div>
 
@@ -347,6 +407,23 @@ export default function VideoCall({ chatName, onEnd, socket, chatId, isIncoming,
                   <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Digital Persona Stream Live</span>
                 </div>
               </div>
+
+              {/* System Log Ticker */}
+              <div className="flex flex-col items-center gap-1 opacity-60">
+                <p className="text-[7px] font-mono text-white/80 uppercase tracking-widest animate-pulse">
+                  NEURAL_LINK_STABLE // SYNC_LOCK: {Math.floor(Math.random() * 100) + 900}ms
+                </p>
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div 
+                      key={i}
+                      animate={{ opacity: [0.2, 1, 0.2] }}
+                      transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+                      className="w-4 h-[1px] bg-white/40"
+                    />
+                  ))}
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -376,15 +453,29 @@ export default function VideoCall({ chatName, onEnd, socket, chatId, isIncoming,
 
         <div className="w-[1px] h-12 bg-white/10 mx-2" />
 
-        <button 
-          onClick={() => setShowPersonaMenu(true)}
-          className={`relative group flex flex-col items-center gap-2 p-3 transition-all ${isDeepFakeMode ? 'text-blue-400' : 'text-slate-400 hover:text-blue-400'}`}
-        >
-          <div className={`p-5 rounded-3xl transition-all duration-500 ${isDeepFakeMode ? 'bg-blue-500 text-white shadow-2xl shadow-blue-500/50 transform scale-110 animate-pulse-slow' : 'bg-slate-800 hover:bg-slate-700'}`}>
-            <Sparkles className={`w-8 h-8 ${isDeepFakeMode ? 'animate-spin-slow' : ''}`} />
-          </div>
-          <span className="text-[8px] font-black uppercase tracking-widest">{isDeepFakeMode ? 'Switch Alias' : 'Live Alias'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowPersonaMenu(true)}
+            className={`relative group flex flex-col items-center gap-2 p-3 transition-all ${isDeepFakeMode ? 'text-blue-400' : 'text-slate-400 hover:text-blue-400'}`}
+          >
+            <div className={`p-5 rounded-3xl transition-all duration-500 ${isDeepFakeMode ? 'bg-blue-500 text-white shadow-2xl shadow-blue-500/50 transform scale-110 animate-pulse-slow' : 'bg-slate-800 hover:bg-slate-700'}`}>
+              <Sparkles className={`w-8 h-8 ${isDeepFakeMode ? 'animate-spin-slow' : ''}`} />
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-widest">{isDeepFakeMode ? 'Switch Alias' : 'Live Alias'}</span>
+          </button>
+
+          {isDeepFakeMode && (
+            <button 
+              onClick={() => setIsVoiceSync(!isVoiceSync)}
+              className={`flex flex-col items-center gap-2 p-3 transition-all ${isVoiceSync ? 'text-blue-400' : 'text-slate-500'}`}
+            >
+              <div className={`p-4 rounded-full transition-all ${isVoiceSync ? 'bg-blue-500/20 border border-blue-500/50' : 'bg-slate-800'}`}>
+                <Mic className="w-6 h-6" />
+              </div>
+              <span className="text-[8px] font-black uppercase tracking-widest">Voice Sync</span>
+            </button>
+          )}
+        </div>
 
         {isDeepFakeMode && (
           <button 

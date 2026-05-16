@@ -70,16 +70,16 @@ export default function ProfileModal({ user, onClose, onUpdate }: ProfileModalPr
         className="bg-white dark:bg-gray-900 w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col h-[700px] relative border border-gray-100 dark:border-gray-800"
       >
         {/* Header Section */}
-        <div className="relative h-32 shrink-0 bg-blue-500 overflow-hidden">
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute -top-10 -left-10 w-40 h-40 bg-white rounded-full blur-3xl" />
-            <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-white rounded-full blur-3xl" />
+        <div className="relative h-32 shrink-0 bg-gray-50 dark:bg-gray-800/50 overflow-hidden border-b border-gray-100 dark:border-gray-800">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue-400 rounded-full blur-3xl" />
+            <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-blue-400 rounded-full blur-3xl" />
           </div>
           
           <div className="absolute top-6 right-6">
             <button 
               onClick={onClose}
-              className="p-2 bg-white/20 hover:bg-white/30 text-white rounded-full transition-all active:scale-90"
+              className="p-2 bg-gray-200/50 hover:bg-gray-200 dark:bg-gray-700/50 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full transition-all active:scale-90"
             >
               <X className="w-5 h-5" />
             </button>
@@ -89,12 +89,12 @@ export default function ProfileModal({ user, onClose, onUpdate }: ProfileModalPr
         {/* Profile Header Overlay */}
         <div className="px-8 -mt-12 flex flex-col items-center md:items-start md:flex-row md:gap-6 relative z-10">
           <div className="relative group">
-            <div className="w-28 h-28 rounded-3xl overflow-hidden border-4 border-white dark:border-gray-900 shadow-xl">
+            <div className="w-28 h-28 rounded-3xl overflow-hidden border-4 border-white dark:border-gray-900 shadow-xl bg-white">
               <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
             </div>
             <button 
               onClick={changeAvatar}
-              className="absolute bottom-1 right-1 p-2 bg-blue-500 text-white rounded-xl shadow-lg hover:scale-110 transition-all border-2 border-white dark:border-gray-900"
+              className="absolute bottom-1 right-1 p-2 bg-black text-white rounded-xl shadow-lg hover:scale-110 transition-all border-2 border-white dark:border-gray-900"
             >
               <Camera className="w-4 h-4" />
             </button>
@@ -253,6 +253,12 @@ export default function ProfileModal({ user, onClose, onUpdate }: ProfileModalPr
                   label="Push Notifications" 
                   isActive={!!formData.settings?.notifications}
                   onClick={() => toggleSetting('notifications')}
+                />
+                <SettingToggle 
+                  icon={<Moon className="w-5 h-5" />} 
+                  label="Black & White Mode" 
+                  isActive={!!formData.settings?.darkMode}
+                  onClick={() => toggleSetting('darkMode')}
                 />
                 <SettingToggle 
                   icon={<Shield className="w-5 h-5" />} 

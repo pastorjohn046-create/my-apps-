@@ -62,6 +62,14 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (currentUser.settings?.darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [currentUser.settings?.darkMode]);
+
+  useEffect(() => {
     const newSocket = io();
     setSocket(newSocket);
 
